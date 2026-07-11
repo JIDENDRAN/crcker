@@ -683,27 +683,27 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     grid-template-columns: 1fr;
   }
 
-  /* Make tables responsive by turning them into card layouts on mobile */
-  .admin-table-wrapper {
+  /* Make ONLY the orders table responsive by turning it into card layout on mobile */
+  .admin-orders .admin-table-wrapper {
     background: none;
     border: none;
   }
 
-  .admin-table, 
-  .admin-table thead, 
-  .admin-table tbody, 
-  .admin-table th, 
-  .admin-table td, 
-  .admin-table tr {
+  .admin-orders .admin-table, 
+  .admin-orders .admin-table thead, 
+  .admin-orders .admin-table tbody, 
+  .admin-orders .admin-table th, 
+  .admin-orders .admin-table td, 
+  .admin-orders .admin-table tr {
     display: block;
     width: 100%;
   }
 
-  .admin-table thead {
+  .admin-orders .admin-table thead {
     display: none; /* Hide header columns on mobile */
   }
 
-  .admin-table tr {
+  .admin-orders .admin-table tr {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -712,40 +712,13 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   }
 
-  .admin-table td {
+  .admin-orders .admin-table td {
     padding: 6px 0;
     border: none;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
-  }
-
-  /* Custom overrides for products card format */
-  .admin-products .admin-table tr {
-    position: relative;
-    padding-left: 80px;
-    min-height: 90px;
-  }
-
-  .admin-products .admin-table td:nth-child(2) {
-    position: absolute;
-    left: 16px;
-    top: 16px;
-    padding: 0;
-  }
-
-  .admin-products .admin-table td:nth-child(3) {
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .admin-products .admin-table td:not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(8))::before {
-    content: attr(data-label) " ";
-    font-weight: 600;
-    color: var(--muted);
-    font-size: 11px;
-    text-transform: uppercase;
   }
 
   /* Custom overrides for orders card format */
@@ -772,6 +745,12 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     color: var(--muted);
     font-size: 11px;
     text-transform: uppercase;
+  }
+
+  /* Keep other tables scrollable and compact on mobile */
+  .admin-dashboard .admin-table td,
+  .admin-products .admin-table td {
+    white-space: nowrap;
   }
 
   .filter-tabs {
