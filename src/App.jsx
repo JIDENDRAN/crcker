@@ -894,6 +894,20 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Floating Cart Button */}
+      <button 
+        className={`floating-cart-btn ${totalItems > 0 ? 'visible' : ''}`}
+        onClick={() => setIsCartOpen(true)}
+      >
+        <div className="floating-cart-content">
+          <ShoppingCart size={20} />
+          <span className="floating-cart-label">View Cart</span>
+          {totalItems > 0 && (
+            <span className="floating-cart-badge">{totalItems}</span>
+          )}
+        </div>
+      </button>
     </div>
   )
 }
