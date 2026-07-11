@@ -412,7 +412,6 @@ function App() {
                   <span className="category-title">{cat.name}</span>
                   <div className="category-badge-group">
                     <span className="item-count">{cat.itemCount} items</span>
-                    {expandedCategory === cat.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </div>
                 </div>
                 
@@ -901,7 +900,7 @@ function App() {
         onClick={() => setIsCartOpen(true)}
       >
         <div className="floating-cart-content">
-          <ShoppingCart size={20} />
+          <ShoppingCart size={24} />
           <span className="floating-cart-label">View Cart</span>
           {totalItems > 0 && (
             <span className="floating-cart-badge">{totalItems}</span>
