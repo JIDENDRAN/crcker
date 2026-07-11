@@ -368,6 +368,7 @@ function App() {
           <button className={`nav-link ${currentPage === 'offers' ? 'active' : ''}`} onClick={() => setCurrentPage('offers')}>Offers</button>
           <button className={`nav-link ${currentPage === 'about' ? 'active' : ''}`} onClick={() => setCurrentPage('about')}>About</button>
           <button className={`nav-link ${currentPage === 'contact' ? 'active' : ''}`} onClick={() => setCurrentPage('contact')}>Contact</button>
+          <a href="/admin.html" className="nav-link admin-nav-link" style={{ color: '#fbbf24', fontWeight: 'bold' }}>Admin Panel</a>
         </nav>
 
         <div className="header-actions">
@@ -808,6 +809,13 @@ function App() {
               >
                 Contact Support
               </button>
+              <a 
+                href="/admin.html" 
+                className="sidebar-link" 
+                style={{ color: '#fbbf24', fontWeight: 'bold' }}
+              >
+                Admin Panel
+              </a>
             </nav>
           </div>
         </div>
