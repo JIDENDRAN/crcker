@@ -94,17 +94,17 @@ export default function AdminOrders({ API }) {
             <tbody>
               {filtered.map(o => (
                 <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td><strong>{o.customer_name}</strong></td>
-                  <td>{o.customer_phone}</td>
-                  <td>{o.city || '—'}</td>
-                  <td><strong>₹{o.final_total}</strong></td>
-                  <td>
+                  <td data-label="ID">{o.id}</td>
+                  <td data-label="Customer"><strong>{o.customer_name}</strong></td>
+                  <td data-label="Phone">{o.customer_phone}</td>
+                  <td data-label="City">{o.city || '—'}</td>
+                  <td data-label="Amount"><strong>₹{o.final_total}</strong></td>
+                  <td data-label="Status">
                     <span className={`status-badge status-${o.status?.toLowerCase()}`}>
                       {o.status}
                     </span>
                   </td>
-                  <td>{o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : '—'}</td>
+                  <td data-label="Date">{o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : '—'}</td>
                   <td>
                     <div className="action-btns">
                       <button className="admin-icon-btn view" onClick={() => setViewOrder(o)} title="View Details">

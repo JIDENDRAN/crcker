@@ -135,7 +135,7 @@ export default function AdminProducts({ API }) {
             <tbody>
               {products.map(p => (
                 <tr key={p.id}>
-                  <td>{p.id}</td>
+                  <td data-label="ID">{p.id}</td>
                   <td>
                     {p.image_url ? (
                       <img src={p.image_url} alt={p.name} className="product-thumb" />
@@ -143,11 +143,11 @@ export default function AdminProducts({ API }) {
                       <div className="product-thumb-placeholder"><Image size={18} /></div>
                     )}
                   </td>
-                  <td><strong>{p.name}</strong></td>
-                  <td>{p.tamil_name || '—'}</td>
-                  <td><span className="category-tag">{p.category}</span></td>
-                  <td><s>₹{p.original_price}</s></td>
-                  <td><span className="price-green">₹{p.discounted_price}</span></td>
+                  <td data-label="Name"><strong>{p.name}</strong></td>
+                  <td data-label="Tamil Name">{p.tamil_name || '—'}</td>
+                  <td data-label="Category"><span className="category-tag">{p.category}</span></td>
+                  <td data-label="MRP"><s>₹{p.original_price}</s></td>
+                  <td data-label="Offer Price"><span className="price-green">₹{p.discounted_price}</span></td>
                   <td>
                     <div className="action-btns">
                       <button className="admin-icon-btn edit" onClick={() => openEdit(p)} title="Edit">
