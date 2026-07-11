@@ -617,12 +617,12 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   /* Order details mobile formatting */
   .order-detail-grid {
     grid-template-columns: 1fr !important;
-    padding: 12px !important;
+    padding: 12px 16px !important;
     gap: 16px;
   }
   
   .order-section {
-    padding: 0;
+    padding: 0 16px !important;
   }
 
   .detail-row {
@@ -641,17 +641,26 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     align-items: center;
     gap: 4px;
     padding: 10px 0;
-    font-size: 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
   }
 
   .cart-item-row span:first-child {
     width: 100%;
     font-weight: 700;
     margin-bottom: 2px;
+    color: var(--text);
+  }
+
+  /* Squeeze spaces between qty, price and subtotal */
+  .cart-item-row span:not(:first-child) {
+    font-size: 12px;
+    color: var(--muted);
   }
 
   .cart-item-row strong {
     margin-left: auto;
+    font-size: 13px;
   }
 
   /* Tables adjustments */
