@@ -603,11 +603,33 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   /* Modals fitting screen */
   .admin-form-modal,
   .admin-detail-modal {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    max-height: 95vh;
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    margin: 12px;
+    max-height: 90vh;
     border-radius: 14px;
+  }
+
+  /* Order details mobile formatting */
+  .order-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .cart-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px 0;
+  }
+
+  .cart-item-row span:first-child {
+    font-weight: 600;
+  }
+
+  .cart-item-row strong {
+    align-self: flex-end;
   }
 
   /* Tables adjustments */
@@ -640,10 +662,16 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     padding: 12px 16px;
   }
   .modal-footer {
-    justify-content: stretch;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .modal-footer .confirm-btns {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .modal-footer button {
-    flex: 1;
     width: 100%;
     justify-content: center;
   }
