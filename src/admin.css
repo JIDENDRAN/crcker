@@ -576,7 +576,75 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   .admin-overlay { display: block; }
   .admin-main { margin-left: 0; }
   .admin-hamburger { display: flex; }
-  .admin-content { padding: 16px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .order-detail-grid { grid-template-columns: 1fr; }
+  .admin-content { padding: 12px; }
+  .form-grid { grid-template-columns: 1fr; padding: 16px; gap: 12px; }
+  .order-detail-grid { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+
+  /* Dashboard cards */
+  .dashboard-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+  }
+  .stat-icon-wrap {
+    width: 36px;
+    height: 36px;
+  }
+  .stat-value {
+    font-size: 16px;
+  }
+  .stat-label {
+    font-size: 11px;
+  }
+
+  /* Modals fitting screen */
+  .admin-form-modal,
+  .admin-detail-modal {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    max-height: 95vh;
+    border-radius: 14px;
+  }
+
+  /* Tables adjustments */
+  .admin-table th, 
+  .admin-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .action-btns {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Settings responsive */
+  .settings-card {
+    padding: 16px;
+  }
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+  .modal-header,
+  .modal-footer {
+    padding: 12px 16px;
+  }
+  .modal-footer {
+    justify-content: stretch;
+  }
+  .modal-footer button {
+    flex: 1;
+    width: 100%;
+    justify-content: center;
+  }
 }
