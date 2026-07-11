@@ -6,7 +6,7 @@ import AdminOrders from './pages/admin/AdminOrders.jsx'
 import AdminSettings from './pages/admin/AdminSettings.jsx'
 import { LayoutDashboard, Package, ShoppingBag, Settings, LogOut, Menu, X, Flame } from 'lucide-react'
 
-const API = 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function AdminApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('admin_logged_in'))
