@@ -352,6 +352,11 @@ function App() {
     <div className="app-container">
       {/* Header */}
       <header className="header">
+        {/* Mobile Hamburger menu */}
+        <button className="menu-btn mobile-only" onClick={() => setIsSidebarOpen(true)}>
+          <Menu size={22} />
+        </button>
+
         <div className="logo-section" onClick={() => setCurrentPage('shop')} style={{ cursor: 'pointer' }}>
           <div className="logo-circle">
             <span>S</span>

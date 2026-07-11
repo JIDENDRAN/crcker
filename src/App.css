@@ -1312,3 +1312,31 @@ body {
   .checkout-form-grid { grid-template-columns: 1fr; }
 }
 
+/* Mobile Sidebar Menu Button & Display Logic */
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.menu-btn:hover {
+  background-color: #f1f5f9;
+}
+
+.mobile-only {
+  display: flex;
+}
+
+@media (min-width: 640px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
