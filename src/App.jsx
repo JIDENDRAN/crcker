@@ -693,15 +693,6 @@ function App() {
         </svg>
       </div>
 
-      <div className="floating-scroll">
-        <button className="scroll-btn" onClick={scrollToBottom}>
-          <ChevronDown size={20} />
-        </button>
-        <button className="scroll-btn" onClick={scrollToTop}>
-          <ChevronUp size={20} />
-        </button>
-      </div>
-
       {/* Cart Modal Overlay */}
       {isCartOpen && (
         <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
