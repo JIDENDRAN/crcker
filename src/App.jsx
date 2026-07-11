@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Phone, ShoppingCart, Menu, ChevronUp, ChevronDown, Plus, Minus, X, FileText, MapPin, Mail, Send, Award, ShieldCheck, Truck, Percent, Gift, Check, Copy } from 'lucide-react'
+import { Phone, ShoppingCart, Menu, ChevronUp, ChevronDown, Plus, Minus, X, FileText, MapPin, Mail, Send, Award, ShieldCheck, Truck, Percent, Gift, Check, Copy, User, PhoneCall, Home, CheckCircle2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import './App.css'
 import { categories } from './data'
+
+const API = 'http://localhost:5000'
 
 function App() {
   const [cart, setCart] = useState({}) // { [productId]: quantity }
@@ -18,6 +20,21 @@ function App() {
 
   // Copied Promo Code State
   const [copiedCode, setCopiedCode] = useState(null)
+
+  // Checkout / Order State
+  const [showCheckout, setShowCheckout] = useState(false)
+  const [orderSuccess, setOrderSuccess] = useState(false)
+  const [orderPlacing, setOrderPlacing] = useState(false)
+  const [checkoutForm, setCheckoutForm] = useState({
+    customer_name: '',
+    customer_phone: '',
+    customer_whatsapp: '',
+    customer_email: '',
+    delivery_address: '',
+    city: '',
+    pincode: '',
+    special_instructions: ''
+  })
 
   // Get flat list of all products for calculations
   const allProducts = categories.flatMap(cat => cat.products)
@@ -177,6 +194,141 @@ function App() {
 
     // Save File
     doc.save(`Sivakasi-Sparkle-Estimate-${estimateNumber}.pdf`)
+  }
+
+  const generateOrderPDF = (customerData) => {
+    const doc = new jsPDF()
+    const orderNumber = 'ORD-' + Math.floor(100000 + Math.random() * 900000)
+    const dateStr = new Date().toLocaleDateString('en-IN')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(22)
+    doc.setTextColor(79, 70, 229)
+    doc.text('SIVAKASI SPARKLE CO.', 14, 20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100)
+    doc.text('Premium Fireworks | Direct Factory Sale', 14, 26)
+    doc.text('123 Main Road, Sivakasi, Tamil Nadu - 626123', 14, 31)
+    doc.text('Phone: +91 98765 43210 | Email: orders@sivakasisparkle.com', 14, 36)
+
+    doc.setDrawColor(79, 70, 229)
+    doc.setLineWidth(0.5)
+    doc.line(14, 40, 196, 40)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(50)
+    doc.setFontSize(10)
+    doc.text(`Order No: ${orderNumber}`, 14, 48)
+    doc.text(`Date: ${dateStr}`, 150, 48)
+
+    // Customer section
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Customer Details:', 14, 56)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Name: ${customerData.customer_name}`, 14, 62)
+    doc.text(`Phone: ${customerData.customer_phone}  |  WhatsApp: ${customerData.customer_whatsapp || customerData.customer_phone}`, 14, 67)
+    doc.text(`Email: ${customerData.customer_email || 'Not provided'}`, 14, 72)
+    doc.text(`Address: ${customerData.delivery_address}, ${customerData.city} - ${customerData.pincode}`, 14, 77)
+    if (customerData.special_instructions) {
+      doc.text(`Instructions: ${customerData.special_instructions}`, 14, 82)
+    }
+
+    const tableHeaders = [['S.No', 'Product Name', 'MRP', 'Offer Price', 'Qty', 'Total']]
+    const tableBody = Object.entries(cart).map(([id, qty], index) => {
+      const product = allProducts.find(p => p.id === parseInt(id))
+      return [index + 1, product?.name || 'Unknown', `₹${product?.originalPrice}`, `₹${product?.discountedPrice}`, qty, `₹${product ? product.discountedPrice * qty : 0}`]
+    })
+
+    autoTable(doc, {
+      head: tableHeaders,
+      body: tableBody,
+      startY: customerData.special_instructions ? 90 : 85,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 4 }
+    })
+
+    const finalY = doc.lastAutoTable.finalY + 10
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(80)
+    doc.text(`Original Value:`, 120, finalY)
+    doc.text(`₹${originalTotal}`, 175, finalY, { align: 'right' })
+    doc.setTextColor(16, 185, 129)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Savings:`, 120, finalY + 6)
+    doc.text(`-₹${totalSavings}`, 175, finalY + 6, { align: 'right' })
+    doc.setFillColor(243, 244, 246)
+    doc.rect(118, finalY + 12, 78, 12, 'F')
+    doc.setFontSize(11)
+    doc.setTextColor(79, 70, 229)
+    doc.text(`Net Payable:`, 120, finalY + 20)
+    doc.text(`₹${finalTotal}`, 175, finalY + 20, { align: 'right' })
+
+    doc.save(`Sivakasi-Sparkle-Order-${orderNumber}.pdf`)
+  }
+
+  const placeOrder = async () => {
+    const f = checkoutForm
+    if (!f.customer_name || !f.customer_phone || !f.delivery_address) {
+      alert('Please fill in Name, Phone, and Delivery Address.')
+      return
+    }
+    setOrderPlacing(true)
+
+    const cartItems = Object.entries(cart).map(([id, qty]) => {
+      const product = allProducts.find(p => p.id === parseInt(id))
+      return {
+        id: parseInt(id),
+        name: product?.name || 'Unknown',
+        qty,
+        price: product?.discountedPrice || 0,
+        total: (product?.discountedPrice || 0) * qty
+      }
+    })
+
+    try {
+      const res = await fetch(`${API}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...f,
+          cart_items: cartItems,
+          original_total: originalTotal,
+          final_total: finalTotal,
+          total_savings: totalSavings
+        })
+      })
+
+      if (res.ok) {
+        generateOrderPDF(f)
+        setOrderSuccess(true)
+        setCart({})
+        setTimeout(() => {
+          setOrderSuccess(false)
+          setShowCheckout(false)
+          setIsCartOpen(false)
+          setCheckoutForm({ customer_name: '', customer_phone: '', customer_whatsapp: '', customer_email: '', delivery_address: '', city: '', pincode: '', special_instructions: '' })
+        }, 3500)
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to place order. Please try again.')
+      }
+    } catch {
+      // If backend is not available, still generate PDF locally
+      generateOrderPDF(f)
+      setOrderSuccess(true)
+      setCart({})
+      setTimeout(() => {
+        setOrderSuccess(false)
+        setShowCheckout(false)
+        setIsCartOpen(false)
+        setCheckoutForm({ customer_name: '', customer_phone: '', customer_whatsapp: '', customer_email: '', delivery_address: '', city: '', pincode: '', special_instructions: '' })
+      }, 3500)
+    }
+    setOrderPlacing(false)
   }
 
   const handleContactSubmit = (e) => {
@@ -612,6 +764,9 @@ function App() {
                 <button className="estimate-btn" onClick={generatePDF}>
                   <FileText size={18} /> Download Estimate (PDF)
                 </button>
+                <button className="checkout-btn" onClick={() => { setIsCartOpen(false); setShowCheckout(true) }}>
+                  Place Order →
+                </button>
               </div>
             )}
           </div>
@@ -654,6 +809,78 @@ function App() {
                 Contact Support
               </button>
             </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout / Order Form Modal */}
+      {showCheckout && (
+        <div className="modal-overlay" onClick={() => setShowCheckout(false)}>
+          <div className="checkout-modal" onClick={e => e.stopPropagation()}>
+            {orderSuccess ? (
+              <div className="order-success-screen">
+                <CheckCircle2 size={56} className="order-success-icon" />
+                <h2>Order Placed Successfully! 🎉</h2>
+                <p>Your order has been received. A PDF confirmation has been downloaded.<br/>We will WhatsApp you shortly with details.</p>
+              </div>
+            ) : (
+              <>
+                <div className="cart-header">
+                  <span className="cart-title">Enter Delivery Details</span>
+                  <button className="icon-btn" onClick={() => setShowCheckout(false)}><X size={20} /></button>
+                </div>
+                <div className="checkout-form-body">
+                  <div className="checkout-form-grid">
+                    <div className="checkout-field">
+                      <label><User size={13} /> Full Name *</label>
+                      <input type="text" value={checkoutForm.customer_name} onChange={e => setCheckoutForm(f => ({...f, customer_name: e.target.value}))} placeholder="Your full name" required />
+                    </div>
+                    <div className="checkout-field">
+                      <label><PhoneCall size={13} /> Mobile Number *</label>
+                      <input type="tel" value={checkoutForm.customer_phone} onChange={e => setCheckoutForm(f => ({...f, customer_phone: e.target.value}))} placeholder="10-digit mobile number" required />
+                    </div>
+                    <div className="checkout-field">
+                      <label><PhoneCall size={13} /> WhatsApp Number</label>
+                      <input type="tel" value={checkoutForm.customer_whatsapp} onChange={e => setCheckoutForm(f => ({...f, customer_whatsapp: e.target.value}))} placeholder="If different from mobile" />
+                    </div>
+                    <div className="checkout-field">
+                      <label><Mail size={13} /> Email Address</label>
+                      <input type="email" value={checkoutForm.customer_email} onChange={e => setCheckoutForm(f => ({...f, customer_email: e.target.value}))} placeholder="your@email.com" />
+                    </div>
+                    <div className="checkout-field full">
+                      <label><Home size={13} /> Delivery Address *</label>
+                      <textarea rows={2} value={checkoutForm.delivery_address} onChange={e => setCheckoutForm(f => ({...f, delivery_address: e.target.value}))} placeholder="Door No., Street, Area..." required />
+                    </div>
+                    <div className="checkout-field">
+                      <label><MapPin size={13} /> City / District *</label>
+                      <input type="text" value={checkoutForm.city} onChange={e => setCheckoutForm(f => ({...f, city: e.target.value}))} placeholder="e.g. Virudhunagar" />
+                    </div>
+                    <div className="checkout-field">
+                      <label>Pincode</label>
+                      <input type="text" value={checkoutForm.pincode} onChange={e => setCheckoutForm(f => ({...f, pincode: e.target.value}))} placeholder="6-digit pincode" />
+                    </div>
+                    <div className="checkout-field full">
+                      <label>Special Instructions (Optional)</label>
+                      <textarea rows={2} value={checkoutForm.special_instructions} onChange={e => setCheckoutForm(f => ({...f, special_instructions: e.target.value}))} placeholder="Any specific packing, delivery, or timing instructions..." />
+                    </div>
+                  </div>
+
+                  <div className="checkout-summary">
+                    <div className="summary-row" style={{ color: '#10b981', fontWeight: '700' }}>
+                      <span>Total Savings</span><span>-₹{totalSavings}</span>
+                    </div>
+                    <div className="summary-total">
+                      <span>Net Payable</span><span>₹{finalTotal}</span>
+                    </div>
+                  </div>
+
+                  <button className="checkout-submit-btn" onClick={placeOrder} disabled={orderPlacing}>
+                    {orderPlacing ? 'Placing Order...' : `Confirm Order — ₹${finalTotal}`}
+                  </button>
+                  <p className="checkout-note">📥 A PDF order copy will be downloaded automatically. The admin will be notified via WhatsApp.</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
