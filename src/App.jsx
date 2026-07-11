@@ -767,11 +767,8 @@ function App() {
                   <span>Rs. {finalTotal}</span>
                 </div>
                 
-                <button className="estimate-btn" onClick={generatePDF}>
-                  <FileText size={18} /> Download Estimate (PDF)
-                </button>
                 <button className="checkout-btn" onClick={() => { setIsCartOpen(false); setShowCheckout(true) }}>
-                  Place Order →
+                  Download Estimate →
                 </button>
               </div>
             )}
@@ -888,7 +885,7 @@ function App() {
                   </div>
 
                   <button className="checkout-submit-btn" onClick={placeOrder} disabled={orderPlacing}>
-                    {orderPlacing ? 'Placing Order...' : `Confirm Order — ₹${finalTotal}`}
+                    {orderPlacing ? 'Submitting...' : 'Submit'}
                   </button>
                   <p className="checkout-note">📥 A PDF order copy will be downloaded automatically. The admin will be notified via WhatsApp.</p>
                 </div>
