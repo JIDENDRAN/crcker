@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Phone, ShoppingCart, Menu, ChevronUp, ChevronDown, Plus, Minus, X, FileText, MapPin, Mail, Send, Award, ShieldCheck, Truck, Percent, Gift, Check, Copy, User, PhoneCall, Home, CheckCircle2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import './App.css'
-import { categories } from './data'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -25,6 +24,27 @@ function App() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderPlacing, setOrderPlacing] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { loadProducts() }, [])
+
+  async function loadProducts() {
+    try {
+      const res = await fetch(`${API}/api/products`)
+      const products = await res.json()
+      const grouped = products.reduce((acc, product) => {
+        const name = product.category || product.category_name || 'Others'
+        let cat = acc.find(c=>c.name===name)
+        if(!cat){cat={id:name,name,products:[],itemCount:0};acc.push(cat)}
+        cat.products.push({...product,image:product.image?`${API}/${product.image}?t=${Date.now()}`:product.image})
+        cat.itemCount=cat.products.length
+        return acc
+      },[])
+      setCategories(grouped)
+    } finally { setLoading(false)}
+  }
+
   const [checkoutForm, setCheckoutForm] = useState({
     customer_name: '',
     customer_phone: '',
@@ -37,7 +57,7 @@ function App() {
   })
 
   // Get flat list of all products for calculations
-  const allProducts = categories.flatMap(cat => cat.products)
+  const allProducts = useMemo(() => categories.flatMap(cat => cat.products), [categories])
 
   const handleUpdateQty = (productId, change) => {
     setCart(prev => {
@@ -347,6 +367,8 @@ function App() {
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
+
+  if (loading) return <div style={{padding:'2rem'}}>Loading products...</div>
 
   return (
     <div className="app-container">
