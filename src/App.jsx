@@ -35,9 +35,50 @@ function App() {
     pincode: '',
     special_instructions: ''
   })
+  const [dbProducts, setDbProducts] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get flat list of all products for calculations
-  const allProducts = categories.flatMap(cat => cat.products)
+  // Fetch products from database
+  useState(() => {
+    fetch(`${API}/api/products`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const mapped = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            tamilName: p.tamil_name || '',
+            originalPrice: Number(p.original_price),
+            discountedPrice: Number(p.discounted_price),
+            image: p.image_url || '',
+            category: p.category || 'General'
+          }))
+          setDbProducts(mapped)
+        }
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  // Dynamically group products into categories
+  const categoriesMap = {}
+  dbProducts.forEach(p => {
+    const catName = p.category
+    if (!categoriesMap[catName]) {
+      categoriesMap[catName] = []
+    }
+    categoriesMap[catName].push(p)
+  })
+
+  const dynamicCategories = Object.keys(categoriesMap).map((catName, index) => ({
+    id: index + 1,
+    name: catName.toUpperCase(),
+    itemCount: categoriesMap[catName].length,
+    products: categoriesMap[catName]
+  }))
+
+  const allProducts = dbProducts
+
 
   const handleUpdateQty = (productId, change) => {
     setCart(prev => {
@@ -406,7 +447,12 @@ function App() {
             </div>
 
             {/* Categories */}
-            {categories.map((cat) => (
+            {loading ? (
+              <div className="admin-loading" style={{ margin: '80px 0' }}>Loading premium fireworks catalog...</div>
+            ) : dynamicCategories.length === 0 ? (
+              <div className="admin-empty">No products available at the moment. Please check back later!</div>
+            ) : (
+              dynamicCategories.map((cat) => (
               <div key={cat.id} className="category-container">
                 <div className="category-header" onClick={() => toggleCategory(cat.id)}>
                   <span className="category-title">{cat.name}</span>
@@ -458,7 +504,7 @@ function App() {
                   </div>
                 )}
               </div>
-            ))}
+            )))}
           </div>
         )}
 
