@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Phone, ShoppingCart, Menu, ChevronUp, ChevronDown, Plus, Minus, X, FileText, MapPin, Mail, Send, Award, ShieldCheck, Truck, Percent, Gift, Check, Copy, User, PhoneCall, Home, CheckCircle2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import './App.css'
-import { categories } from './data'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -25,6 +24,57 @@ function App() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderPlacing, setOrderPlacing] = useState(false)
+  // Load cached categories immediately for instant load, fallback to empty array
+  const [categories, setCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_categories')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  // If we have cached categories, skip showing the loading spinner
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('cached_categories')
+    } catch {
+      return true
+    }
+  })
+
+  useEffect(() => { loadProducts() }, [])
+
+  async function loadProducts() {
+    try {
+      const res = await fetch(`${API}/api/products`)
+      const products = await res.json()
+      const grouped = products.reduce((acc, product) => {
+        const name = product.category || product.category_name || 'Others'
+        let cat = acc.find(c=>c.name===name)
+        if(!cat){cat={id:name,name,products:[],itemCount:0};acc.push(cat)}
+        cat.products.push({
+          id: product.id,
+          name: product.name,
+          tamilName: product.tamil_name || '',
+          originalPrice: Number(product.original_price),
+          discountedPrice: Number(product.discounted_price),
+          image: product.image_url || ''
+        })
+        cat.itemCount=cat.products.length
+        return acc
+      },[])
+      setCategories(grouped)
+      // Save to localStorage so next visit loads instantly
+      try {
+        localStorage.setItem('cached_categories', JSON.stringify(grouped))
+      } catch {}
+    } catch (err) {
+      console.error(err)
+    } finally { 
+      setLoading(false)
+    }
+  }
+
   const [checkoutForm, setCheckoutForm] = useState({
     customer_name: '',
     customer_phone: '',
@@ -35,50 +85,9 @@ function App() {
     pincode: '',
     special_instructions: ''
   })
-  const [dbProducts, setDbProducts] = useState([])
-  const [loading, setLoading] = useState(true)
 
-  // Fetch products from database
-  useState(() => {
-    fetch(`${API}/api/products`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const mapped = data.map(p => ({
-            id: p.id,
-            name: p.name,
-            tamilName: p.tamil_name || '',
-            originalPrice: Number(p.original_price),
-            discountedPrice: Number(p.discounted_price),
-            image: p.image_url || '',
-            category: p.category || 'General'
-          }))
-          setDbProducts(mapped)
-        }
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
-
-  // Dynamically group products into categories
-  const categoriesMap = {}
-  dbProducts.forEach(p => {
-    const catName = p.category
-    if (!categoriesMap[catName]) {
-      categoriesMap[catName] = []
-    }
-    categoriesMap[catName].push(p)
-  })
-
-  const dynamicCategories = Object.keys(categoriesMap).map((catName, index) => ({
-    id: index + 1,
-    name: catName.toUpperCase(),
-    itemCount: categoriesMap[catName].length,
-    products: categoriesMap[catName]
-  }))
-
-  const allProducts = dbProducts
-
+  // Get flat list of all products dynamically
+  const allProducts = useMemo(() => categories.flatMap(cat => cat.products), [categories])
 
   const handleUpdateQty = (productId, change) => {
     setCart(prev => {
@@ -389,6 +398,8 @@ function App() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
+  if (loading) return <div style={{padding:'2rem'}}>Loading products...</div>
+
   return (
     <div className="app-container">
       {/* Header */}
@@ -449,11 +460,11 @@ function App() {
             {/* Categories */}
             {loading ? (
               <div className="admin-loading" style={{ margin: '80px 0' }}>Loading premium fireworks catalog...</div>
-            ) : dynamicCategories.length === 0 ? (
+            ) : categories.length === 0 ? (
               <div className="admin-empty">No products available at the moment. Please check back later!</div>
             ) : (
-              dynamicCategories.map((cat) => (
-              <div key={cat.id} className="category-container">
+              categories.map((cat) => (
+              <div key={cat.id || cat.name} className="category-container">
                 <div className="category-header" onClick={() => toggleCategory(cat.id)}>
                   <span className="category-title">{cat.name}</span>
                   <div className="category-badge-group">
@@ -476,7 +487,7 @@ function App() {
                             </div>
                           </div>
                           <div className="product-action">
-                            <img src={product.image} alt={product.name} className="product-image" />
+                            <img src={product.image} alt={product.name} className="product-image" loading="lazy" />
                             <div className="action-container">
                               {qty === 0 ? (
                                 <button 
