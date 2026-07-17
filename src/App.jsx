@@ -6,6 +6,31 @@ import './App.css'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+const getFallbackProductImage = (name = '', category = '') => {
+  const lowercaseName = name.toLowerCase();
+  const lowercaseCategory = category.toLowerCase();
+
+  if (lowercaseName.includes('sparkler') || lowercaseName.includes('kambi') || lowercaseCategory.includes('sparkler')) {
+    return 'https://images.unsplash.com/photo-1517263904808-5dc91e3e7044?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('chakkar') || lowercaseName.includes('wheel') || lowercaseCategory.includes('chakkar') || lowercaseCategory.includes('wheel')) {
+    return 'https://images.unsplash.com/photo-1607513746994-51f730a44832?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('pot') || lowercaseName.includes('flower') || lowercaseCategory.includes('pot') || lowercaseCategory.includes('flower')) {
+    return 'https://images.unsplash.com/photo-1547841243-eacb14453cd9?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('rocket') || lowercaseName.includes('sky') || lowercaseCategory.includes('rocket') || lowercaseCategory.includes('sky')) {
+    return 'https://images.unsplash.com/photo-1533230408708-8f9f91d1235a?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('bomb') || lowercaseName.includes('sound') || lowercaseName.includes('crack') || lowercaseCategory.includes('bomb') || lowercaseCategory.includes('sound') || lowercaseCategory.includes('crack')) {
+    return 'https://images.unsplash.com/photo-1498855926480-d98e83099315?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('fountain') || lowercaseName.includes('color') || lowercaseCategory.includes('fountain')) {
+    return 'https://images.unsplash.com/photo-1507908708419-7799e05c8bbc?w=400&auto=format&fit=crop&q=60';
+  }
+  return 'https://images.unsplash.com/photo-1507502707541-f369a3b18502?w=400&auto=format&fit=crop&q=60';
+};
+
 function App() {
   const [cart, setCart] = useState({}) // { [productId]: quantity }
   const [expandedCategory, setExpandedCategory] = useState(1)
@@ -49,7 +74,7 @@ function App() {
             tamilName: p.tamil_name || '',
             originalPrice: Number(p.original_price),
             discountedPrice: Number(p.discounted_price),
-            image: p.image_url || '',
+            image: p.image_url && p.image_url.trim() !== '' ? p.image_url : getFallbackProductImage(p.name, p.category),
             category: p.category || 'General'
           }))
           setDbProducts(mapped)

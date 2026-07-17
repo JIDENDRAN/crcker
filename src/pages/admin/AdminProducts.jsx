@@ -5,6 +5,31 @@ const CATEGORIES = ['Sparklers', 'Ground Chakkars', 'Flower Pots', 'Sky Shots', 
 
 const emptyForm = { name: '', tamil_name: '', category: 'Sparklers', original_price: '', discounted_price: '', image_url: '' }
 
+const getFallbackProductImage = (name = '', category = '') => {
+  const lowercaseName = name.toLowerCase();
+  const lowercaseCategory = category.toLowerCase();
+
+  if (lowercaseName.includes('sparkler') || lowercaseName.includes('kambi') || lowercaseCategory.includes('sparkler')) {
+    return 'https://images.unsplash.com/photo-1517263904808-5dc91e3e7044?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('chakkar') || lowercaseName.includes('wheel') || lowercaseCategory.includes('chakkar') || lowercaseCategory.includes('wheel')) {
+    return 'https://images.unsplash.com/photo-1607513746994-51f730a44832?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('pot') || lowercaseName.includes('flower') || lowercaseCategory.includes('pot') || lowercaseCategory.includes('flower')) {
+    return 'https://images.unsplash.com/photo-1547841243-eacb14453cd9?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('rocket') || lowercaseName.includes('sky') || lowercaseCategory.includes('rocket') || lowercaseCategory.includes('sky')) {
+    return 'https://images.unsplash.com/photo-1533230408708-8f9f91d1235a?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('bomb') || lowercaseName.includes('sound') || lowercaseName.includes('crack') || lowercaseCategory.includes('bomb') || lowercaseCategory.includes('sound') || lowercaseCategory.includes('crack')) {
+    return 'https://images.unsplash.com/photo-1498855926480-d98e83099315?w=400&auto=format&fit=crop&q=60';
+  }
+  if (lowercaseName.includes('fountain') || lowercaseName.includes('color') || lowercaseCategory.includes('fountain')) {
+    return 'https://images.unsplash.com/photo-1507908708419-7799e05c8bbc?w=400&auto=format&fit=crop&q=60';
+  }
+  return 'https://images.unsplash.com/photo-1507502707541-f369a3b18502?w=400&auto=format&fit=crop&q=60';
+};
+
 export default function AdminProducts({ API }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -137,11 +162,11 @@ export default function AdminProducts({ API }) {
                 <tr key={p.id}>
                   <td data-label="ID">{p.id}</td>
                   <td>
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="product-thumb" />
-                    ) : (
-                      <div className="product-thumb-placeholder"><Image size={18} /></div>
-                    )}
+                    <img 
+                      src={p.image_url && p.image_url.trim() !== '' ? p.image_url : getFallbackProductImage(p.name, p.category)} 
+                      alt={p.name} 
+                      className="product-thumb" 
+                    />
                   </td>
                   <td data-label="Name"><strong>{p.name}</strong></td>
                   <td data-label="Tamil Name">{p.tamil_name || '—'}</td>
