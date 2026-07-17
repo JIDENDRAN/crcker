@@ -12,7 +12,7 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState('shop') // 'shop' | 'offers' | 'about' | 'contact'
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  
+
   // Contact Form State
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [formSubmitted, setFormSubmitted] = useState(false)
@@ -24,57 +24,6 @@ function App() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderPlacing, setOrderPlacing] = useState(false)
-  // Load cached categories immediately for instant load, fallback to empty array
-  const [categories, setCategories] = useState(() => {
-    try {
-      const cached = localStorage.getItem('cached_categories')
-      return cached ? JSON.parse(cached) : []
-    } catch {
-      return []
-    }
-  })
-  // If we have cached categories, skip showing the loading spinner
-  const [loading, setLoading] = useState(() => {
-    try {
-      return !localStorage.getItem('cached_categories')
-    } catch {
-      return true
-    }
-  })
-
-  useEffect(() => { loadProducts() }, [])
-
-  async function loadProducts() {
-    try {
-      const res = await fetch(`${API}/api/products`)
-      const products = await res.json()
-      const grouped = products.reduce((acc, product) => {
-        const name = product.category || product.category_name || 'Others'
-        let cat = acc.find(c=>c.name===name)
-        if(!cat){cat={id:name,name,products:[],itemCount:0};acc.push(cat)}
-        cat.products.push({
-          id: product.id,
-          name: product.name,
-          tamilName: product.tamil_name || '',
-          originalPrice: Number(product.original_price),
-          discountedPrice: Number(product.discounted_price),
-          image: product.image_url || ''
-        })
-        cat.itemCount=cat.products.length
-        return acc
-      },[])
-      setCategories(grouped)
-      // Save to localStorage so next visit loads instantly
-      try {
-        localStorage.setItem('cached_categories', JSON.stringify(grouped))
-      } catch {}
-    } catch (err) {
-      console.error(err)
-    } finally { 
-      setLoading(false)
-    }
-  }
-
   const [checkoutForm, setCheckoutForm] = useState({
     customer_name: '',
     customer_phone: '',
@@ -85,9 +34,50 @@ function App() {
     pincode: '',
     special_instructions: ''
   })
+  const [dbProducts, setDbProducts] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get flat list of all products dynamically
-  const allProducts = useMemo(() => categories.flatMap(cat => cat.products), [categories])
+  // Fetch products from database
+  useState(() => {
+    fetch(`${API}/api/products`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const mapped = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            tamilName: p.tamil_name || '',
+            originalPrice: Number(p.original_price),
+            discountedPrice: Number(p.discounted_price),
+            image: p.image_url || '',
+            category: p.category || 'General'
+          }))
+          setDbProducts(mapped)
+        }
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  // Dynamically group products into categories
+  const categoriesMap = {}
+  dbProducts.forEach(p => {
+    const catName = p.category
+    if (!categoriesMap[catName]) {
+      categoriesMap[catName] = []
+    }
+    categoriesMap[catName].push(p)
+  })
+
+  const dynamicCategories = Object.keys(categoriesMap).map((catName, index) => ({
+    id: index + 1,
+    name: catName.toUpperCase(),
+    itemCount: categoriesMap[catName].length,
+    products: categoriesMap[catName]
+  }))
+
+  const allProducts = dbProducts
+
 
   const handleUpdateQty = (productId, change) => {
     setCart(prev => {
@@ -127,7 +117,7 @@ function App() {
 
   // Calculate totals
   const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0)
-  
+
   const originalTotal = Object.entries(cart).reduce((sum, [id, qty]) => {
     const product = allProducts.find(p => p.id === parseInt(id))
     return sum + (product ? product.originalPrice * qty : 0)
@@ -206,7 +196,7 @@ function App() {
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(80)
-    
+
     doc.text(`Total Items:`, 120, finalY)
     doc.text(`${totalItems}`, 175, finalY, { align: 'right' })
 
@@ -393,12 +383,10 @@ function App() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-  
+
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
-
-  if (loading) return <div style={{padding:'2rem'}}>Loading products...</div>
 
   return (
     <div className="app-container">
@@ -418,7 +406,7 @@ function App() {
             <div className="brand-subtext">Premium Fireworks Online @ Factory Prices</div>
           </div>
         </div>
-        
+
         {/* Navigation Links */}
         <nav className="header-nav">
           <button className={`nav-link ${currentPage === 'shop' ? 'active' : ''}`} onClick={() => setCurrentPage('shop')}>Shop</button>
@@ -443,7 +431,7 @@ function App() {
 
       {/* Pages Container */}
       <main className="page-content">
-        
+
         {/* SHOP PAGE */}
         {currentPage === 'shop' && (
           <div className="shop-page animate-fade-in">
@@ -459,63 +447,76 @@ function App() {
 
             {/* Categories */}
             {loading ? (
-              <div className="admin-loading" style={{ margin: '80px 0' }}>Loading premium fireworks catalog...</div>
-            ) : categories.length === 0 ? (
+              <div className="catalog-loading">
+                <div className="chakkar-spinner">
+                  <div className="sparkle-particle p1"></div>
+                  <div className="sparkle-particle p2"></div>
+                  <div className="sparkle-particle p3"></div>
+                  <div className="sparkle-particle p4"></div>
+                  <div className="sparkle-particle p5"></div>
+                  <div className="sparkle-particle p6"></div>
+                  <div className="sparkle-particle p7"></div>
+                  <div className="sparkle-particle p8"></div>
+                </div>
+                <div className="loading-title">Sparkling up your catalog</div>
+                <div className="loading-subtitle">Fetching premium Sivakasi green fireworks<span className="loading-dots"></span></div>
+              </div>
+            ) : dynamicCategories.length === 0 ? (
               <div className="admin-empty">No products available at the moment. Please check back later!</div>
             ) : (
-              categories.map((cat) => (
-              <div key={cat.id || cat.name} className="category-container">
-                <div className="category-header" onClick={() => toggleCategory(cat.id)}>
-                  <span className="category-title">{cat.name}</span>
-                  <div className="category-badge-group">
-                    <span className="item-count">{cat.itemCount} items</span>
+              dynamicCategories.map((cat) => (
+                <div key={cat.id} className="category-container">
+                  <div className="category-header" onClick={() => toggleCategory(cat.id)}>
+                    <span className="category-title">{cat.name}</span>
+                    <div className="category-badge-group">
+                      <span className="item-count">{cat.itemCount} items</span>
+                    </div>
                   </div>
+
+                  {expandedCategory === cat.id && (
+                    <div className="category-content">
+                      {cat.products.map(product => {
+                        const qty = getProductQty(product.id)
+                        return (
+                          <div key={product.id} className="product-item">
+                            <div className="product-details">
+                              <div className="product-name">{product.name}</div>
+                              <div className="product-tamil">{product.tamilName}</div>
+                              <div className="product-pricing">
+                                <span className="original-price">₹{product.originalPrice}</span>
+                                <span className="discounted-price">₹{product.discountedPrice}</span>
+                              </div>
+                            </div>
+                            <div className="product-action">
+                              <img src={product.image} alt={product.name} className="product-image" />
+                              <div className="action-container">
+                                {qty === 0 ? (
+                                  <button
+                                    className="add-btn"
+                                    onClick={() => handleUpdateQty(product.id, 1)}
+                                  >
+                                    ADD
+                                  </button>
+                                ) : (
+                                  <div className="quantity-control">
+                                    <button className="qty-btn" onClick={() => handleUpdateQty(product.id, -1)}>
+                                      <Minus size={14} />
+                                    </button>
+                                    <span className="qty-value">{qty}</span>
+                                    <button className="qty-btn" onClick={() => handleUpdateQty(product.id, 1)}>
+                                      <Plus size={14} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-                
-                {expandedCategory === cat.id && (
-                  <div className="category-content">
-                    {cat.products.map(product => {
-                      const qty = getProductQty(product.id)
-                      return (
-                        <div key={product.id} className="product-item">
-                          <div className="product-details">
-                            <div className="product-name">{product.name}</div>
-                            <div className="product-tamil">{product.tamilName}</div>
-                            <div className="product-pricing">
-                              <span className="original-price">₹{product.originalPrice}</span>
-                              <span className="discounted-price">₹{product.discountedPrice}</span>
-                            </div>
-                          </div>
-                          <div className="product-action">
-                            <img src={product.image} alt={product.name} className="product-image" loading="lazy" />
-                            <div className="action-container">
-                              {qty === 0 ? (
-                                <button 
-                                  className="add-btn" 
-                                  onClick={() => handleUpdateQty(product.id, 1)}
-                                >
-                                  ADD
-                                </button>
-                              ) : (
-                                <div className="quantity-control">
-                                  <button className="qty-btn" onClick={() => handleUpdateQty(product.id, -1)}>
-                                    <Minus size={14} />
-                                  </button>
-                                  <span className="qty-value">{qty}</span>
-                                  <button className="qty-btn" onClick={() => handleUpdateQty(product.id, 1)}>
-                                    <Plus size={14} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )))}
+              )))}
           </div>
         )}
 
@@ -569,7 +570,7 @@ function App() {
             <div className="offers-section" style={{ marginTop: '40px' }}>
               <h2>Special Value Combos</h2>
               <div className="combo-grid">
-                
+
                 <div className="combo-card">
                   <Gift className="combo-icon" size={32} />
                   <div className="combo-body">
@@ -579,8 +580,8 @@ function App() {
                       <span style={{ textDecoration: 'line-through', color: '#94a3b8' }}>₹1,400</span>
                       <span className="combo-price">₹14</span>
                     </div>
-                    <button 
-                      className="add-combo-btn" 
+                    <button
+                      className="add-combo-btn"
                       onClick={() => handleAddCombo([101, 102, 107])}
                     >
                       Add Combo to Cart
@@ -597,8 +598,8 @@ function App() {
                       <span style={{ textDecoration: 'line-through', color: '#94a3b8' }}>₹1,170</span>
                       <span className="combo-price">₹82</span>
                     </div>
-                    <button 
-                      className="add-combo-btn" 
+                    <button
+                      className="add-combo-btn"
                       onClick={() => handleAddCombo([201, 202, 201])}
                     >
                       Add Combo to Cart
@@ -660,7 +661,7 @@ function App() {
               <div className="contact-info">
                 <h2>Factory Location & Support</h2>
                 <p style={{ color: '#64748b', marginBottom: '30px' }}>Reach out to us directly or visit our office to check product demos.</p>
-                
+
                 <div className="info-item">
                   <MapPin className="info-icon" size={20} />
                   <div>
@@ -697,31 +698,31 @@ function App() {
                   <form onSubmit={handleContactSubmit}>
                     <div className="form-group">
                       <label htmlFor="name">Your Name</label>
-                      <input 
-                        type="text" 
-                        id="name" 
-                        required 
-                        value={contactForm.name} 
+                      <input
+                        type="text"
+                        id="name"
+                        required
+                        value={contactForm.name}
                         onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                       />
                     </div>
                     <div className="form-group">
                       <label htmlFor="email">Email Address</label>
-                      <input 
-                        type="email" 
-                        id="email" 
-                        required 
-                        value={contactForm.email} 
+                      <input
+                        type="email"
+                        id="email"
+                        required
+                        value={contactForm.email}
                         onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                       />
                     </div>
                     <div className="form-group">
                       <label htmlFor="message">Message</label>
-                      <textarea 
-                        id="message" 
-                        rows="5" 
+                      <textarea
+                        id="message"
+                        rows="5"
                         required
-                        value={contactForm.message} 
+                        value={contactForm.message}
                         onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                       ></textarea>
                     </div>
@@ -746,7 +747,7 @@ function App() {
       {/* Floating Action Buttons */}
       <div className="floating-whatsapp">
         <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
         </svg>
       </div>
 
@@ -813,7 +814,7 @@ function App() {
                   <span>Net Payable:</span>
                   <span>Rs. {finalTotal}</span>
                 </div>
-                
+
                 <button className="checkout-btn" onClick={() => { setIsCartOpen(false); setShowCheckout(true) }}>
                   Download Estimate →
                 </button>
@@ -834,33 +835,33 @@ function App() {
               </button>
             </div>
             <nav className="sidebar-nav">
-              <button 
-                className={`sidebar-link ${currentPage === 'shop' ? 'active' : ''}`} 
+              <button
+                className={`sidebar-link ${currentPage === 'shop' ? 'active' : ''}`}
                 onClick={() => { setCurrentPage('shop'); setIsSidebarOpen(false); }}
               >
                 Shop Catalog
               </button>
-              <button 
-                className={`sidebar-link ${currentPage === 'offers' ? 'active' : ''}`} 
+              <button
+                className={`sidebar-link ${currentPage === 'offers' ? 'active' : ''}`}
                 onClick={() => { setCurrentPage('offers'); setIsSidebarOpen(false); }}
               >
                 Running Offers
               </button>
-              <button 
-                className={`sidebar-link ${currentPage === 'about' ? 'active' : ''}`} 
+              <button
+                className={`sidebar-link ${currentPage === 'about' ? 'active' : ''}`}
                 onClick={() => { setCurrentPage('about'); setIsSidebarOpen(false); }}
               >
                 About Us
               </button>
-              <button 
-                className={`sidebar-link ${currentPage === 'contact' ? 'active' : ''}`} 
+              <button
+                className={`sidebar-link ${currentPage === 'contact' ? 'active' : ''}`}
                 onClick={() => { setCurrentPage('contact'); setIsSidebarOpen(false); }}
               >
                 Contact Support
               </button>
-              <a 
-                href="/admin" 
-                className="sidebar-link" 
+              <a
+                href="/admin"
+                className="sidebar-link"
                 style={{ color: '#fbbf24', fontWeight: 'bold' }}
               >
                 Admin Panel
@@ -878,7 +879,7 @@ function App() {
               <div className="order-success-screen">
                 <CheckCircle2 size={56} className="order-success-icon" />
                 <h2>Order Placed Successfully! 🎉</h2>
-                <p>Your order has been received. A PDF confirmation has been downloaded.<br/>We will WhatsApp you shortly with details.</p>
+                <p>Your order has been received. A PDF confirmation has been downloaded.<br />We will WhatsApp you shortly with details.</p>
               </div>
             ) : (
               <>
@@ -890,35 +891,35 @@ function App() {
                   <div className="checkout-form-grid">
                     <div className="checkout-field">
                       <label><User size={13} /> Full Name *</label>
-                      <input type="text" value={checkoutForm.customer_name} onChange={e => setCheckoutForm(f => ({...f, customer_name: e.target.value}))} placeholder="Your full name" required />
+                      <input type="text" value={checkoutForm.customer_name} onChange={e => setCheckoutForm(f => ({ ...f, customer_name: e.target.value }))} placeholder="Your full name" required />
                     </div>
                     <div className="checkout-field">
                       <label><PhoneCall size={13} /> Mobile Number *</label>
-                      <input type="tel" value={checkoutForm.customer_phone} onChange={e => setCheckoutForm(f => ({...f, customer_phone: e.target.value}))} placeholder="10-digit mobile number" required />
+                      <input type="tel" value={checkoutForm.customer_phone} onChange={e => setCheckoutForm(f => ({ ...f, customer_phone: e.target.value }))} placeholder="10-digit mobile number" required />
                     </div>
                     <div className="checkout-field">
                       <label><PhoneCall size={13} /> WhatsApp Number</label>
-                      <input type="tel" value={checkoutForm.customer_whatsapp} onChange={e => setCheckoutForm(f => ({...f, customer_whatsapp: e.target.value}))} placeholder="If different from mobile" />
+                      <input type="tel" value={checkoutForm.customer_whatsapp} onChange={e => setCheckoutForm(f => ({ ...f, customer_whatsapp: e.target.value }))} placeholder="If different from mobile" />
                     </div>
                     <div className="checkout-field">
                       <label><Mail size={13} /> Email Address</label>
-                      <input type="email" value={checkoutForm.customer_email} onChange={e => setCheckoutForm(f => ({...f, customer_email: e.target.value}))} placeholder="your@email.com" />
+                      <input type="email" value={checkoutForm.customer_email} onChange={e => setCheckoutForm(f => ({ ...f, customer_email: e.target.value }))} placeholder="your@email.com" />
                     </div>
                     <div className="checkout-field full">
                       <label><Home size={13} /> Delivery Address *</label>
-                      <textarea rows={2} value={checkoutForm.delivery_address} onChange={e => setCheckoutForm(f => ({...f, delivery_address: e.target.value}))} placeholder="Door No., Street, Area..." required />
+                      <textarea rows={2} value={checkoutForm.delivery_address} onChange={e => setCheckoutForm(f => ({ ...f, delivery_address: e.target.value }))} placeholder="Door No., Street, Area..." required />
                     </div>
                     <div className="checkout-field">
                       <label><MapPin size={13} /> City / District *</label>
-                      <input type="text" value={checkoutForm.city} onChange={e => setCheckoutForm(f => ({...f, city: e.target.value}))} placeholder="e.g. Virudhunagar" />
+                      <input type="text" value={checkoutForm.city} onChange={e => setCheckoutForm(f => ({ ...f, city: e.target.value }))} placeholder="e.g. Virudhunagar" />
                     </div>
                     <div className="checkout-field">
                       <label>Pincode</label>
-                      <input type="text" value={checkoutForm.pincode} onChange={e => setCheckoutForm(f => ({...f, pincode: e.target.value}))} placeholder="6-digit pincode" />
+                      <input type="text" value={checkoutForm.pincode} onChange={e => setCheckoutForm(f => ({ ...f, pincode: e.target.value }))} placeholder="6-digit pincode" />
                     </div>
                     <div className="checkout-field full">
                       <label>Special Instructions (Optional)</label>
-                      <textarea rows={2} value={checkoutForm.special_instructions} onChange={e => setCheckoutForm(f => ({...f, special_instructions: e.target.value}))} placeholder="Any specific packing, delivery, or timing instructions..." />
+                      <textarea rows={2} value={checkoutForm.special_instructions} onChange={e => setCheckoutForm(f => ({ ...f, special_instructions: e.target.value }))} placeholder="Any specific packing, delivery, or timing instructions..." />
                     </div>
                   </div>
 
@@ -943,7 +944,7 @@ function App() {
       )}
 
       {/* Floating Cart Button */}
-      <button 
+      <button
         className={`floating-cart-btn ${totalItems > 0 ? 'visible' : ''}`}
         onClick={() => setIsCartOpen(true)}
       >
