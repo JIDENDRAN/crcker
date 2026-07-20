@@ -74,19 +74,25 @@ export default function AdminProducts({ API }) {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+
+    // Limit to ~2MB to prevent blowing up the database size
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image is too large. Please upload an image smaller than 2MB.')
+      return
+    }
+
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('image', file)
-      const res = await fetch(`${API}/api/upload`, { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.filePath) {
-        setForm(f => ({ ...f, image_url: `${API}${data.filePath}` }))
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setForm(f => ({ ...f, image_url: reader.result }))
+        setUploading(false)
       }
+      reader.readAsDataURL(file)
     } catch {
-      alert('Image upload failed.')
+      alert('Image processing failed.')
+      setUploading(false)
     }
-    setUploading(false)
   }
 
   const handleSave = async () => {
