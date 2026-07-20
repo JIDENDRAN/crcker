@@ -97,6 +97,8 @@ async function dispatchOrderWhatsAppAlert(order) {
 // ─────────────────────────────────────────────
 // ORDERS API
 // ─────────────────────────────────────────────
+let cachedOrders = null;
+
 app.post('/api/orders', async (req, res) => {
   try {
     const db = getDb();
@@ -121,6 +123,8 @@ app.post('/api/orders', async (req, res) => {
 
     const newOrder = await db.get('SELECT * FROM orders WHERE id = ?', [result.lastID]);
 
+    cachedOrders = null; // invalidate cache
+
     // Fire WhatsApp notification in background
     dispatchOrderWhatsAppAlert(newOrder);
 
@@ -133,8 +137,12 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/orders', async (req, res) => {
   try {
+    if (cachedOrders) {
+      return res.status(200).json(cachedOrders);
+    }
     const db = getDb();
     const orders = await db.all('SELECT * FROM orders ORDER BY id DESC');
+    cachedOrders = orders;
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch orders' });
@@ -147,6 +155,7 @@ app.put('/api/orders/:id', async (req, res) => {
     const { status } = req.body;
     await db.run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
     const updated = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    cachedOrders = null; // invalidate cache
     res.status(200).json({ message: 'Order updated', order: updated });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update order' });
@@ -157,6 +166,7 @@ app.delete('/api/orders/:id', async (req, res) => {
   try {
     const db = getDb();
     await db.run('DELETE FROM orders WHERE id = ?', [req.params.id]);
+    cachedOrders = null; // invalidate cache
     res.status(200).json({ message: 'Order deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete order' });
@@ -166,10 +176,16 @@ app.delete('/api/orders/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 // PRODUCTS API
 // ─────────────────────────────────────────────
+let cachedProducts = null;
+
 app.get('/api/products', async (req, res) => {
   try {
+    if (cachedProducts) {
+      return res.status(200).json(cachedProducts);
+    }
     const db = getDb();
     const products = await db.all('SELECT * FROM products ORDER BY id ASC');
+    cachedProducts = products;
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -185,6 +201,7 @@ app.post('/api/products', async (req, res) => {
       [name, tamil_name || '', category || 'General', original_price, discounted_price, image_url || '']
     );
     const newProduct = await db.get('SELECT * FROM products WHERE id = ?', [result.lastID]);
+    cachedProducts = null; // invalidate cache
     res.status(201).json({ message: 'Product added', product: newProduct });
   } catch (error) {
     res.status(500).json({ error: 'Failed to add product' });
@@ -200,6 +217,7 @@ app.put('/api/products/:id', async (req, res) => {
       [name, tamil_name || '', category || 'General', original_price, discounted_price, image_url || '', req.params.id]
     );
     const updated = await db.get('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    cachedProducts = null; // invalidate cache
     res.status(200).json({ message: 'Product updated', product: updated });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update product' });
@@ -210,6 +228,7 @@ app.delete('/api/products/:id', async (req, res) => {
   try {
     const db = getDb();
     await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
+    cachedProducts = null; // invalidate cache
     res.status(200).json({ message: 'Product deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete product' });
